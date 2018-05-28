@@ -280,6 +280,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &181829953
 GameObject:
   m_ObjectHideFlags: 0
@@ -366,6 +367,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: -1
 --- !u!1 &275909098
 GameObject:
   m_ObjectHideFlags: 0
@@ -452,6 +454,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &284879020
 GameObject:
   m_ObjectHideFlags: 0
@@ -643,6 +646,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &742541089
 GameObject:
   m_ObjectHideFlags: 0
@@ -729,6 +733,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &761182303
 GameObject:
   m_ObjectHideFlags: 0
@@ -815,6 +820,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &854984224
 GameObject:
   m_ObjectHideFlags: 0
@@ -901,6 +907,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: -1
 --- !u!1 &873706413
 GameObject:
   m_ObjectHideFlags: 0
@@ -987,6 +994,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 1
 --- !u!1 &883868043
 GameObject:
   m_ObjectHideFlags: 0
@@ -1073,6 +1081,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &892996496
 GameObject:
   m_ObjectHideFlags: 0
@@ -1216,6 +1225,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &1504800776
 GameObject:
   m_ObjectHideFlags: 0
@@ -1302,6 +1312,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &1526654382
 GameObject:
   m_ObjectHideFlags: 0
@@ -1388,6 +1399,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &1704387386
 GameObject:
   m_ObjectHideFlags: 0
@@ -1474,6 +1486,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &1733508854
 GameObject:
   m_ObjectHideFlags: 0
@@ -1560,6 +1573,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &1888889708
 GameObject:
   m_ObjectHideFlags: 0
@@ -1646,6 +1660,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
 --- !u!1 &1965731922
 GameObject:
   m_ObjectHideFlags: 0
@@ -1695,7 +1710,9 @@ MonoBehaviour:
     - {fileID: 742541092}
     - {fileID: 1361913528}
     - {fileID: 883868046}
+  Alvo: {fileID: 873706416}
   keyBoardTest: 0
+  speed: 0.1
 --- !u!212 &1965731924
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1839,3 +1856,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   action: 0
+  reward: 0
