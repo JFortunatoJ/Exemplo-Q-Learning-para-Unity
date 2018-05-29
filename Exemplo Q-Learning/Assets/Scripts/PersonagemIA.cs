@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum Action { Up, Down, Left, Right }
 
@@ -33,6 +34,7 @@ public class QCell
 public class PersonagemIA : MonoBehaviour
 {
     [SerializeField] private Row[] tileMap = new Row[4];
+    [Space]
     [SerializeField] private Tile Alvo;
 
     [SerializeField] private QCell[,] TabelaQ = new QCell[4, 4];
@@ -42,6 +44,8 @@ public class PersonagemIA : MonoBehaviour
 
     [SerializeField] private bool keyBoardTest = false;
     [SerializeField] private float speed = 0.2f;
+    [Space]
+    [SerializeField] private Text txtChapters;
 
 
     //Q-Learning
@@ -49,21 +53,31 @@ public class PersonagemIA : MonoBehaviour
     public const float DESCONTO = 0.9f;
 
     private Action action;
-    private Tile S;
-    private Tile proximoS;
+    private Tile currentState;
+    private Tile nextState;
     private float R;
 
     private float QPred;
-    private float QAlvo;
+    private float QTarget;
 
-    private int episodio = 0;
+    private int chapter;
+    private int Chapter
+    {
+        get { return chapter; }
+        set
+        {
+            chapter = value;
+            txtChapters.text = string.Concat("Episódio: ", chapter);
+        }
+    }
 
-    bool terminou = false;
+    bool finished = false;
 
 
     void Start()
     {
-        ConstruirTabelaQ();
+        Chapter = 0;
+        BuildTable();
         StartCoroutine(QLearning());
     }
 
@@ -71,9 +85,9 @@ public class PersonagemIA : MonoBehaviour
     {
         curCollumnIndex = 0;
         curRowIndex = 0;
-        S = tileMap[curRowIndex].Collumns[curCollumnIndex];
-        transform.position = S.transform.position;
-        terminou = false;
+        currentState = tileMap[curRowIndex].Collumns[curCollumnIndex];
+        transform.position = currentState.transform.position;
+        finished = false;
     }
 
     private void Update()
@@ -81,13 +95,13 @@ public class PersonagemIA : MonoBehaviour
         if (keyBoardTest)
         {
             if (Input.GetKeyDown(KeyCode.W))
-                Recompensa(Action.Up);
+                Reward(Action.Up);
             if (Input.GetKeyDown(KeyCode.S))
-                Recompensa(Action.Down);
+                Reward(Action.Down);
             if (Input.GetKeyDown(KeyCode.A))
-                Recompensa(Action.Left);
+                Reward(Action.Left);
             if (Input.GetKeyDown(KeyCode.D))
-                Recompensa(Action.Right);
+                Reward(Action.Right);
         }
     }
 
@@ -97,38 +111,38 @@ public class PersonagemIA : MonoBehaviour
         {
             InitChapter();
 
-            while (!terminou)
+            while (!finished)
             {
                 yield return new WaitForSeconds(speed);
-                action = EscolheAcao();
-                Recompensa(action);
-                QPred = PegarValorTabelaQ(action, S);
-                if (!proximoS.Equals(Alvo))
+
+                action = ChooseAction();
+                Reward(action);
+                QPred = GetValueOfTable(action, currentState);
+                if (!nextState.Equals(Alvo))
                 {
-                    QAlvo = R + DESCONTO * PegarValorMaximoTabelaQ(proximoS);
+                    QTarget = R + DESCONTO * GetMaxValueOfTable(nextState);
                 }
                 else
                 {
-                    QAlvo = R;
-                    terminou = true;
+                    QTarget = R;
+                    finished = true;
                 }
 
-                InserirQNaTabela(ALFA * (QAlvo - QPred), S, action);
-                S = proximoS;
-                transform.position = S.transform.position;
+                InsertValueOnTable(ALFA * (QTarget - QPred), currentState, action);
+                currentState = nextState;
+                transform.position = currentState.transform.position;
             }
 
-            print("Episódio: " + episodio);
-            ShowQTabel();
+            ShowTabel();
 
-            episodio++;
+            Chapter++;
 
             yield return new WaitForSeconds(1);
-        } while (episodio < 100);
+        } while (Chapter < 100);
         print("Terminou");
     }
 
-    private void Recompensa(Action action)
+    private void Reward(Action action)
     {
         switch (action)
         {
@@ -151,13 +165,13 @@ public class PersonagemIA : MonoBehaviour
         }
 
         R = tileMap[curRowIndex].Collumns[curCollumnIndex].reward;
-        proximoS = tileMap[curRowIndex].Collumns[curCollumnIndex];
+        nextState = tileMap[curRowIndex].Collumns[curCollumnIndex];
 
         if (R == -1)
-            terminou = true;
+            finished = true;
     }
 
-    private Action EscolheAcao()
+    private Action ChooseAction()
     {
         List<Action> possiveisAcoes = new List<Action>();
         //Esquerda
@@ -191,7 +205,7 @@ public class PersonagemIA : MonoBehaviour
         return bestAction;
     }
 
-    private void InserirQNaTabela(float _quality, Tile _state, Action _action)
+    private void InsertValueOnTable(float _quality, Tile _state, Action _action)
     {
         foreach (QCell item in TabelaQ)
         {
@@ -210,7 +224,7 @@ public class PersonagemIA : MonoBehaviour
         }
     }
 
-    private float PegarValorTabelaQ(Action _action, Tile _state)
+    private float GetValueOfTable(Action _action, Tile _state)
     {
         foreach (QCell item in TabelaQ)
         {
@@ -229,7 +243,7 @@ public class PersonagemIA : MonoBehaviour
         return float.NaN;
     }
 
-    private float PegarValorMaximoTabelaQ(Tile _state)
+    private float GetMaxValueOfTable(Tile _state)
     {
         float max = 0;
         foreach (QCell item in TabelaQ)
@@ -250,7 +264,7 @@ public class PersonagemIA : MonoBehaviour
         return max;
     }
 
-    private void ConstruirTabelaQ()
+    private void BuildTable()
     {
         for (int i = 0; i < 4; i++)
         {
@@ -279,7 +293,7 @@ public class PersonagemIA : MonoBehaviour
         }
     }
 
-    private void ShowQTabel()
+    private void ShowTabel()
     {
         for (int i = 0; i < 4; i++)
         {
