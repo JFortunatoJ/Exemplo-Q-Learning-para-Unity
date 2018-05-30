@@ -2,21 +2,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
+//Ações
 public enum Action { Up, Down, Left, Right }
 
+//Classe 'linha' utilizada para identificar o mapa (matriz)
 [System.Serializable]
 public class Row
 {
     public Tile[] Collumns;
 }
 
+//Classe que controla as ação e seu valor na tabela Q
 [System.Serializable]
 public class ActionQuality
 {
     public Action Action;
     public float Quality;
 
+    //Construtor
     public ActionQuality(Action a, float q)
     {
         Action = a;
@@ -24,6 +29,7 @@ public class ActionQuality
     }
 }
 
+//Célula da tabela Q, possui o tile (estado) e as possíveis ações com seus respectivos valores
 [System.Serializable]
 public class QCell
 {
@@ -33,54 +39,73 @@ public class QCell
 
 public class PersonagemIA : MonoBehaviour
 {
+    //Mapa
     [SerializeField] private Row[] tileMap = new Row[4];
     [Space]
+
+    //Alvo
     [SerializeField] private Tile Alvo;
 
+    //Tabela Q (matriz 4x4)
     [SerializeField] private QCell[,] TabelaQ = new QCell[4, 4];
 
+    //Variáveis usadas para navegar pelo mapa
     private int curCollumnIndex = 0;
     private int curRowIndex = 0;
 
+    //Usado para testar a movimentação
     [SerializeField] private bool keyBoardTest = false;
+    //Velocidade de movimento do personagem
     [SerializeField] private float speed = 0.2f;
     [Space]
+    //Texto que mostra o capítulo atual
     [SerializeField] private Text txtChapters;
 
 
     //Q-Learning
     private const float ALFA = 0.1f;
-    public const float DESCONTO = 0.9f;
+    private const float DESCONTO = 0.9f;
 
+    //Ação a ser tomada (A)
     private Action action;
+    //Estado atual (S)
     private Tile currentState;
+    //Próximo estado (S')
     private Tile nextState;
+    //Recompensa do estado (R)
     private float R;
 
+    //QPred e QAlvo
     private float QPred;
     private float QTarget;
 
-    private int chapter;
-    private int Chapter
+    //Episódio atual
+    private int episode;
+    private int Episode
     {
-        get { return chapter; }
+        get { return episode; }
         set
         {
-            chapter = value;
-            txtChapters.text = string.Concat("Episódio: ", chapter);
+            episode = value;
+            txtChapters.text = string.Concat("Episódio: ", episode);
         }
     }
 
+    //Terminou?
     bool finished = false;
 
 
     void Start()
     {
-        Chapter = 0;
+        Episode = 0;
+
+        //Constrói a tabela
         BuildTable();
+        //Inicia o algoritimo
         StartCoroutine(QLearning());
     }
 
+    //Começa um novo episódio
     private void InitChapter()
     {
         curCollumnIndex = 0;
@@ -109,17 +134,22 @@ public class PersonagemIA : MonoBehaviour
     {
         do
         {
+            //Começa um novo capítulo
             InitChapter();
 
+            //Enquanto não terminou
             while (!finished)
             {
-                yield return new WaitForSeconds(speed);
-
+                //Escolhe uma ação
                 action = ChooseAction();
-                Reward(action);
-                QPred = GetValueOfTable(action, currentState);
+                //Pega a recompesa do estado baseado na ação
+                R = Reward(action);
+                //Pega o valor da tabela baseado na ação tomada
+                QPred = GetValueOfTable(currentState, action);
+                //Se o próximo estado for diferente do alvo
                 if (!nextState.Equals(Alvo))
                 {
+                    //Calcula o QAlvo
                     QTarget = R + DESCONTO * GetMaxValueOfTable(nextState);
                 }
                 else
@@ -130,20 +160,24 @@ public class PersonagemIA : MonoBehaviour
 
                 InsertValueOnTable(ALFA * (QTarget - QPred), currentState, action);
                 currentState = nextState;
-                transform.position = currentState.transform.position;
+
+                Tweener t = transform.DOMove(currentState.transform.position, speed);
+                yield return t.WaitForCompletion();
             }
 
-            ShowTabel();
+            //ShowTabel();
 
-            Chapter++;
+            Episode++;
 
             yield return new WaitForSeconds(1);
-        } while (Chapter < 100);
+        } while (Episode < 100);
         print("Terminou");
     }
 
-    private void Reward(Action action)
+    //Pega a recompensa
+    private float Reward(Action action)
     {
+        //'Realiza' a ação
         switch (action)
         {
             case Action.Down:
@@ -164,15 +198,21 @@ public class PersonagemIA : MonoBehaviour
                 break;
         }
 
-        R = tileMap[curRowIndex].Collumns[curCollumnIndex].reward;
+        float r = tileMap[curRowIndex].Collumns[curCollumnIndex].reward;
         nextState = tileMap[curRowIndex].Collumns[curCollumnIndex];
 
-        if (R == -1)
+        //Se chegou em um obstáculo = termina o episódio
+        if (r == -1)
             finished = true;
+
+        return r;
     }
 
+    //Escolhe a ação
     private Action ChooseAction()
     {
+        //Determina as possíveis ações baseado na posição atual
+        //Ex: Não dá para ir para esquerda se a posição atual estiver na primeira coluna da matriz
         List<Action> possiveisAcoes = new List<Action>();
         //Esquerda
         if (curCollumnIndex - 1 >= 0)
@@ -190,8 +230,10 @@ public class PersonagemIA : MonoBehaviour
         if (curRowIndex + 1 < tileMap.Length)
             possiveisAcoes.Add(Action.Down);
 
-
+        //Escolhe uma ação aleatória provisóriamente
         Action bestAction = possiveisAcoes[Random.Range(0, possiveisAcoes.Count)];
+
+        //Escolhe a ação com maior valor na tabela Q baseado na posição atual
         float maxQuality = 0;
         foreach (ActionQuality item in TabelaQ[curRowIndex, curCollumnIndex].Actions)
         {
@@ -205,8 +247,10 @@ public class PersonagemIA : MonoBehaviour
         return bestAction;
     }
 
+    //Inseri valor na tabela Q
     private void InsertValueOnTable(float _quality, Tile _state, Action _action)
     {
+        //Procura a célula na tabela Q com o estado e ação especificados
         foreach (QCell item in TabelaQ)
         {
             if (item.State.Equals(_state))
@@ -215,6 +259,7 @@ public class PersonagemIA : MonoBehaviour
                 {
                     if (item.Actions[i].Action.Equals(_action))
                     {
+                        //Incrementa o valor daquela célula
                         item.Actions[i].Quality += _quality;
                         break;
                     }
@@ -224,7 +269,8 @@ public class PersonagemIA : MonoBehaviour
         }
     }
 
-    private float GetValueOfTable(Action _action, Tile _state)
+    //Retorna o valor da tabela procurando pelo estado e ação
+    private float GetValueOfTable(Tile _state, Action _action)
     {
         foreach (QCell item in TabelaQ)
         {
@@ -233,9 +279,7 @@ public class PersonagemIA : MonoBehaviour
                 foreach (ActionQuality action in item.Actions)
                 {
                     if (action.Action.Equals(_action))
-                    {
                         return action.Quality;
-                    }
                 }
                 break;
             }
@@ -243,6 +287,7 @@ public class PersonagemIA : MonoBehaviour
         return float.NaN;
     }
 
+    //Retorna o maior valor da tabela
     private float GetMaxValueOfTable(Tile _state)
     {
         float max = 0;
@@ -253,9 +298,7 @@ public class PersonagemIA : MonoBehaviour
                 foreach (ActionQuality action in item.Actions)
                 {
                     if (action.Quality > max)
-                    {
                         max = action.Quality;
-                    }
                 }
                 break;
             }
@@ -264,6 +307,7 @@ public class PersonagemIA : MonoBehaviour
         return max;
     }
 
+    //Constrói a tabela, atribuindo 0 para todas as células
     private void BuildTable()
     {
         for (int i = 0; i < 4; i++)
