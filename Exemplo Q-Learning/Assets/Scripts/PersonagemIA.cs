@@ -46,6 +46,8 @@ public class PersonagemIA : MonoBehaviour
     [Space]
 
     //Alvo
+    //Para alterar o objetivo, basta arrastar o tile desejado para essa variável no inspector e alterar o valor de sua recompensa
+    //para 1
     [SerializeField] private Tile Alvo;
 
     //Tabela Q (matriz 4x4)
@@ -173,7 +175,7 @@ public class PersonagemIA : MonoBehaviour
                 if (!nextState.Equals(Alvo))
                 {
                     //Calcula o QAlvo
-                    QTarget = R + DESCONTO * GetMaxValueOfTable(nextState);
+                    QTarget = R + DESCONTO * GetMaxValueOfTable().Quality;
                 }
                 else
                 {
@@ -189,7 +191,7 @@ public class PersonagemIA : MonoBehaviour
                 yield return t.WaitForCompletion();
             }
 
-            //ShowTabel();
+            ShowTabel();
 
             Episode++;
 
@@ -266,7 +268,7 @@ public class PersonagemIA : MonoBehaviour
         float maxQuality = 0;
         foreach (ActionQuality item in TabelaQ[curRowIndex, curCollumnIndex].Actions)
         {
-            if (item.Quality > maxQuality)
+            if (item.Quality > maxQuality /*&& possiveisAcoes.Contains(item.Action)*/)
             {
                 maxQuality = item.Quality;
                 bestAction = item.Action;
@@ -317,23 +319,20 @@ public class PersonagemIA : MonoBehaviour
     }
 
     //Retorna o maior valor da tabela
-    private float GetMaxValueOfTable(Tile _state)
+    private ActionQuality GetMaxValueOfTable()
     {
         float max = 0;
-        foreach (QCell item in TabelaQ)
+        ActionQuality bestAction = TabelaQ[curRowIndex, curCollumnIndex].Actions[0];
+
+        foreach (ActionQuality action in TabelaQ[curRowIndex, curCollumnIndex].Actions)
         {
-            if (item.State.Equals(_state))
+            if (action.Quality > max)
             {
-                foreach (ActionQuality action in item.Actions)
-                {
-                    if (action.Quality > max)
-                        max = action.Quality;
-                }
-                break;
+                max = action.Quality;
+                bestAction = action;
             }
         }
-
-        return max;
+        return bestAction;
     }
 
     //Constrói a tabela, atribuindo 0 para todas as células
