@@ -39,6 +39,8 @@ public class QCell
 
 public class PersonagemIA : MonoBehaviour
 {
+    #region <Inspector>
+
     //Mapa
     [SerializeField] private Row[] tileMap = new Row[4];
     [Space]
@@ -49,10 +51,6 @@ public class PersonagemIA : MonoBehaviour
     //Tabela Q (matriz 4x4)
     [SerializeField] private QCell[,] TabelaQ = new QCell[4, 4];
 
-    //Variáveis usadas para navegar pelo mapa
-    private int curCollumnIndex = 0;
-    private int curRowIndex = 0;
-
     //Usado para testar a movimentação
     [SerializeField] private bool keyBoardTest = false;
     //Velocidade de movimento do personagem
@@ -60,7 +58,15 @@ public class PersonagemIA : MonoBehaviour
     [Space]
     //Texto que mostra o capítulo atual
     [SerializeField] private Text txtChapters;
+    [SerializeField] private Text txtTargetReachTimes;
 
+    #endregion
+
+    #region <Variáveis Privadas>
+
+    //Variáveis usadas para navegar pelo mapa
+    private int curCollumnIndex = 0;
+    private int curRowIndex = 0;
 
     //Q-Learning
     private const float ALFA = 0.1f;
@@ -72,6 +78,8 @@ public class PersonagemIA : MonoBehaviour
     private Tile currentState;
     //Próximo estado (S')
     private Tile nextState;
+    //Último estado
+    private Tile lastState;
     //Recompensa do estado (R)
     private float R;
 
@@ -91,28 +99,33 @@ public class PersonagemIA : MonoBehaviour
         }
     }
 
-    //Terminou?
-    bool finished = false;
+    private int timesReachTarget;
+    private int TimesReachTarget
+    {
+        get { return timesReachTarget; }
+        set
+        {
+            timesReachTarget = value;
+            txtTargetReachTimes.text = string.Concat("Chegou ao objetivo: ", TimesReachTarget);
+        }
+    }
 
+    //Terminou?
+    private bool finished = false;
+
+    #endregion
+
+    #region <Métodos>
 
     void Start()
     {
         Episode = 0;
+        TimesReachTarget = 0;
 
         //Constrói a tabela
         BuildTable();
         //Inicia o algoritimo
         StartCoroutine(QLearning());
-    }
-
-    //Começa um novo episódio
-    private void InitChapter()
-    {
-        curCollumnIndex = 0;
-        curRowIndex = 0;
-        currentState = tileMap[curRowIndex].Collumns[curCollumnIndex];
-        transform.position = currentState.transform.position;
-        finished = false;
     }
 
     private void Update()
@@ -128,6 +141,16 @@ public class PersonagemIA : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.D))
                 Reward(Action.Right);
         }
+    }
+
+    //Começa um novo episódio
+    private void InitChapter()
+    {
+        curCollumnIndex = 0;
+        curRowIndex = 0;
+        currentState = tileMap[curRowIndex].Collumns[curCollumnIndex];
+        transform.position = currentState.transform.position;
+        finished = false;
     }
 
     private IEnumerator QLearning()
@@ -159,6 +182,7 @@ public class PersonagemIA : MonoBehaviour
                 }
 
                 InsertValueOnTable(ALFA * (QTarget - QPred), currentState, action);
+                lastState = currentState;
                 currentState = nextState;
 
                 Tweener t = transform.DOMove(currentState.transform.position, speed);
@@ -177,6 +201,7 @@ public class PersonagemIA : MonoBehaviour
     //Pega a recompensa
     private float Reward(Action action)
     {
+
         //'Realiza' a ação
         switch (action)
         {
@@ -204,6 +229,8 @@ public class PersonagemIA : MonoBehaviour
         //Se chegou em um obstáculo = termina o episódio
         if (r == -1)
             finished = true;
+        else if (r == 1)
+            TimesReachTarget++;
 
         return r;
     }
@@ -213,21 +240,23 @@ public class PersonagemIA : MonoBehaviour
     {
         //Determina as possíveis ações baseado na posição atual
         //Ex: Não dá para ir para esquerda se a posição atual estiver na primeira coluna da matriz
+        //Verifica também se o próximo estado for diferente do estado anterior, assim não volta para o estado que acabou de passar
         List<Action> possiveisAcoes = new List<Action>();
+
         //Esquerda
-        if (curCollumnIndex - 1 >= 0)
+        if (curCollumnIndex - 1 >= 0 && TabelaQ[curRowIndex, curCollumnIndex - 1].State != lastState)
             possiveisAcoes.Add(Action.Left);
 
         //Direita
-        if (curCollumnIndex + 1 < tileMap[0].Collumns.Length)
+        if (curCollumnIndex + 1 < tileMap[0].Collumns.Length && TabelaQ[curRowIndex, curCollumnIndex + 1].State != lastState)
             possiveisAcoes.Add(Action.Right);
 
         //Cima
-        if (curRowIndex - 1 >= 0)
+        if (curRowIndex - 1 >= 0 && TabelaQ[curRowIndex - 1, curCollumnIndex].State != lastState)
             possiveisAcoes.Add(Action.Up);
 
         //Baixo
-        if (curRowIndex + 1 < tileMap.Length)
+        if (curRowIndex + 1 < tileMap.Length && TabelaQ[curRowIndex + 1, curCollumnIndex].State != lastState)
             possiveisAcoes.Add(Action.Down);
 
         //Escolhe uma ação aleatória provisóriamente
@@ -352,4 +381,6 @@ public class PersonagemIA : MonoBehaviour
             }
         }
     }
+
+    #endregion
 }
